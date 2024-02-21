@@ -1,5 +1,5 @@
 import axios from "axios";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { PageTitle } from "../styles/homeStyle";
 import {
@@ -8,40 +8,33 @@ import {
   FilterWrapper,
   ItemContainer,
   Notfication,
-  Productivity,
   Remove,
-  Session,
   Status,
-  TimerButton,
-  TimerSection,
   Title,
   TodoContainer,
-  WorkSession,
 } from "../styles/todoStyle";
-import { Button, Popconfirm, Select, message } from "antd";
+import { Popconfirm, Select } from "antd";
 import { StatusOp, filterOption } from "../constant/option";
 import { toggleLoader } from "../redux/slice/loaderSlice";
 import Timer from "../components/Timer";
-import { MdCancel, MdDeleteForever } from "react-icons/md";
+import { MdCancel } from "react-icons/md";
 
 const TodoList = () => {
   const [todo, setTodos] = useState([]);
   const [filterTodo, setFilterTodo] = useState([]);
   const { userInfo } = useSelector((state) => state.userReducer);
-  const [timer, setTimer] = useState(15); // Initial work session duration
   const [workSessions, setWorkSessions] = useState(0);
   const [isNotification, setNotfication] = useState(false);
 
   const dispatch = useDispatch();
 
-  //
+  // fetch todo list
   const fetchTodosList = async () => {
     try {
       dispatch(toggleLoader(true));
       const response = await axios.get(
         `https://jsonplaceholder.typicode.com/todos?userId=${userInfo?.id}`
       );
-
       if (response) {
         dispatch(toggleLoader(false));
         setTodos(response.data);
@@ -77,7 +70,7 @@ const TodoList = () => {
   const handleStatus = (value, todoData) => {
     setFilterTodo((prev) =>
       prev?.map((item) => {
-        return item?.id == todoData?.id
+        return item?.id === todoData?.id
           ? { ...item, completed: value === "completed" ? true : false }
           : { ...item };
       })
@@ -100,7 +93,7 @@ const TodoList = () => {
       {isNotification && (
         <Notfication>
           Hi there ! it's time for a quick{" "}
-          {workSessions % 2 == 0 ? 10 + " " : 5 + " "}
+          {workSessions % 2 === 0 ? 10 + " " : 5 + " "}
           second break
         </Notfication>
       )}
