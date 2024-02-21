@@ -7,7 +7,9 @@ import {
   FilterSection,
   FilterWrapper,
   ItemContainer,
+  Notfication,
   Productivity,
+  Remove,
   Session,
   Status,
   TimerButton,
@@ -16,9 +18,11 @@ import {
   TodoContainer,
   WorkSession,
 } from "../styles/todoStyle";
-import { Select } from "antd";
-import { filterOption } from "../constant/option";
+import { Button, Popconfirm, Select, message } from "antd";
+import { StatusOp, filterOption } from "../constant/option";
 import { toggleLoader } from "../redux/slice/loaderSlice";
+import Timer from "../components/Timer";
+import { MdCancel, MdDeleteForever } from "react-icons/md";
 
 const TodoList = () => {
   const [todo, setTodos] = useState([]);
@@ -26,8 +30,8 @@ const TodoList = () => {
   const { userInfo } = useSelector((state) => state.userReducer);
   const [timer, setTimer] = useState(15); // Initial work session duration
   const [workSessions, setWorkSessions] = useState(0);
-  const [isBreak, setIsBreak] = useState(false);
-  const [isRuning, setIsRunning] = useState(true);
+  const [isNotification, setNotfication] = useState(false);
+
   const dispatch = useDispatch();
 
   //
@@ -40,7 +44,6 @@ const TodoList = () => {
 
       if (response) {
         dispatch(toggleLoader(false));
-
         setTodos(response.data);
         setFilterTodo(response.data);
       }
@@ -63,50 +66,44 @@ const TodoList = () => {
   }, [userInfo]);
 
   useEffect(() => {
-    let intervalId;
-
-    if (isRuning) {
-      if (timer === 0) {
-        clearInterval(intervalId);
-
-        if (isBreak) {
-          // Break is over, start the next work session
-          setTimer(15);
-          setIsBreak(false);
-        } else {
-          // Start the break
-          if ((workSessions + 1) % 2 === 0) {
-            // Suggest a longer break after every two work sessions
-            setTimer(10);
-          } else {
-            // Take a regular break
-            setTimer(5);
-          }
-          setIsBreak(true);
-          setWorkSessions((prevSessions) => prevSessions + 1);
-        }
-      } else {
-        intervalId = setInterval(() => {
-          setTimer((prevTimer) => prevTimer - 1);
-        }, 1000);
-      }
+    if (workSessions) {
+      setNotfication(true);
+      setTimeout(() => {
+        setNotfication(false);
+      }, 3000);
     }
+  }, [workSessions]);
 
-    return () => clearInterval(intervalId);
-  }, [timer, isBreak, isRuning, workSessions]);
+  const handleStatus = (value, todoData) => {
+    setFilterTodo((prev) =>
+      prev?.map((item) => {
+        return item?.id == todoData?.id
+          ? { ...item, completed: value === "completed" ? true : false }
+          : { ...item };
+      })
+    );
+  };
+
+  const confirm = (info) => {
+    setFilterTodo((prev) => prev?.filter((item) => info.id !== item.id));
+    setTodos((prev) => prev?.filter((item) => info.id !== item.id));
+  };
+
+  const cancel = (e) => {
+    return;
+  };
 
   return (
     <Container>
       <PageTitle>Todo List</PageTitle>
 
-      <Productivity>
-        <div>
-          {isBreak
-            ? `Hi there! it time for a quick ${timer} second break`
-            : `Time left: ${timer}`}
-        </div>
-      </Productivity>
-      <WorkSession>work sessions : {workSessions}</WorkSession>
+      {isNotification && (
+        <Notfication>
+          Hi there ! it's time for a quick{" "}
+          {workSessions % 2 == 0 ? 10 + " " : 5 + " "}
+          second break
+        </Notfication>
+      )}
 
       <FilterSection>
         <FilterWrapper>
@@ -116,33 +113,42 @@ const TodoList = () => {
             onChange={handleChange}
           />
         </FilterWrapper>
-        <TimerSection>
-          <Session>work sessions : {workSessions}</Session>
-          <TimerButton onClick={() => setIsRunning(!isRuning)}>
-            {isRuning ? "Pause Timer" : "Start Timer"}
-          </TimerButton>
-          <TimerButton
-            onClick={() => {
-              setIsBreak(false);
-              setTimer(15);
-            }}
-          >
-            Reset
-          </TimerButton>
-        </TimerSection>
+        <div>Work Session : {workSessions}</div>
       </FilterSection>
 
       <TodoContainer>
         {filterTodo?.map((item) => {
           return (
             <ItemContainer key={item?.id}>
+              <Remove>
+                <Popconfirm
+                  title="Delete the task"
+                  description="Are you sure to delete this task?"
+                  onConfirm={() => confirm(item)}
+                  onCancel={cancel}
+                  okText="Yes"
+                  cancelText="No"
+                >
+                  <MdCancel size={20} cursor={"pointer"} />
+                </Popconfirm>
+              </Remove>
               <Title>
                 <b>Title :</b> {item.title}
               </Title>
               <Status color={item.completed}>
                 <b>Status :</b>
-                <span> {item.completed ? "Completed" : "Not Completed"}</span>
+                <Select
+                  className="custome"
+                  options={StatusOp}
+                  defaultValue={item.completed ? "Completed" : "Not Completed"}
+                  onChange={handleStatus}
+                />
               </Status>
+              <Timer
+                duration={15}
+                setWorkSessions={setWorkSessions}
+                workSessions={workSessions}
+              />
             </ItemContainer>
           );
         })}

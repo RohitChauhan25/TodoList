@@ -12,3 +12,14 @@ export const filterOption = [
     value: "not completed",
   },
 ];
+
+export const StatusOp = [
+  {
+    label: "completed",
+    value: "completed",
+  },
+  {
+    label: "Not completed",
+    value: "Not completed",
+  },
+];
